@@ -119,6 +119,7 @@ check_input <- function(data, nme=NULL,
       }
     }
   }
+
   # check data
   if( !is.null(len) ) {
     if( length(data) != len ) {
@@ -150,6 +151,7 @@ check_input <- function(data, nme=NULL,
   if( !(allow_na %in% c(TRUE, FALSE)) ) {
     stop("allow_na should be either TRUE or FALSE")
   }
+
   # check data
   if( !allow_na ) {
     # if data has 0 length, sum(is.na(data)) is equal to 0
@@ -168,8 +170,8 @@ check_input <- function(data, nme=NULL,
                     'factor'=!(is.factor(val) | is.character(val)),
                     'num'=!((is.numeric(val) & !is.integer(val)) |
                             is.integer(val)),
-                    'char'=!(is.factor(val) | is.character(val))),
-                    TRUE) {
+                    'char'=!(is.factor(val) | is.character(val)),
+                    TRUE) ) {
       stop(paste0("val should be ", cls))
     }
     if( length(val) == 0 ) {
@@ -178,11 +180,12 @@ check_input <- function(data, nme=NULL,
       stop("NA should not present in val, use allow_na instead")
     }
   }
+
   # check data
   if( !is.null(val) ) {
     if( length(data) > 0 ) {
       data_na_rm <- data[!is.na(data)]
-      if( data_na_rm > 0 ) {
+      if( length(data_na_rm) > 0 ) {
         if( sum(data_na_rm %in% val) != length(data_na_rm) ) {
           selected_val <- val[1:min(length(val), 4)]
           stop(paste0(nme, " contains unexpected elements. ",

@@ -10,23 +10,24 @@
 # nme (character/null): the reference to data in the error msg
 # cls (character/null): expected data class (if null, data class is not tested)
 #                       (see note 1 for more details)
-#                       *** cls test is carried out regardless of data length ***
+#                       Note that cls test is carried out regardless of data length
 # len (integer/null): expected data length (if null, data length is not tested)
 # min_len (integer/null): min data length (if null, min data length is not tested)
 #                         (if len is not null, min data length is not tested)
 # max_len (integer/null): max data length (if null, max data length is not tested)
 #                         (if len is not null, max data length is not tested)
-# val (same class as data/null): acceptable elements in data
-#                                (NA should not %in% val, use allow_na if need to
-#                                include NA)
-#                                If cls is specified, val is tested against cls.
-#                                If cls is not specified, val is tested against the
-#                                atomic class of data (data_cls in the code).
-#                                character can be used when data is factor
-#                                (see note 2 for more details)
-#                                *** val test is performed only when data length > 0 ***
+# val (same or comparable atomic class as data /null):
+#                       acceptable elements in data
+#                       (NA should not %in% val, use allow_na if need to include NA)
+#                       If cls is specified, atomic class of val is tested against cls
+#                       (see note 2 for more details).
+#                       If cls is not specified, atomic class of val is tested against
+#                       the atomic class of data (data_cls in the code).
+#                       The only exception: character can be used when cls is
+#                       'factor' or cls is NULL but data is factor.
+#                       Note that val test is performed only when data length > 0
 # allow_na (logical): allow NA in data or not
-#                     *** allow_na test is performed only when data length > 0 ***
+#                     Note that allow_na test is performed only when data length > 0
 
 # [OUTPUTS]
 # If check failed, an error will be raised. Otherwise, no output.
@@ -38,13 +39,20 @@
 #    [atomic class] logical: is.logical is TRUE
 #    [atomic class] character: is.character is TRUE
 #    [atomic class] factor: is.factor is TRUE
-#    [aggregated class] num: either integer (see above) or numeric (see above)
-#    [aggregated class] char: either character (see above) or factor (see above)
-# 2. When cls is num or char, we allow val to be of different atomic class as data.
-#    In this case, we are more cared about the information rather than the
-#    format of the information. For example, with cls = num, data = 5L and
-#    val = c(5, 6), no error will be raised. We don't care whether it's 5L
-#    or 5.0 (in mathematical calculation, they mean the same thing).
+#    [aggregated class] num: union of integer and numeric atomic classes
+#    [aggregated class] char: union of character and factor atomic classes
+# 2. When cls is set to num or char, we are more cared about the
+#    information rather than the format of the information. For example,
+#    when we want to calculate the square root of a positive number,
+#    sqrt(5L) and sqrt(5.0) should produce the same result (in mathematical
+#    calculation, 5L and 5.0 mean the same thing). As a natural consequence
+#    of this, if val is not NULL, its class will be checked against cls
+#    rather than the atomic class of data. To demonstrate the feasibility
+#    of using val of different atomic class as data
+#    5L %in% c(1.0, 5.0) # returns TRUE
+#    5.0 %in% c(1L, 5L) # returns TRUE
+#    'a' %in% factor(c('a', 'b')) # returns TRUE
+#    factor('a') %in% c('a', 'b') # returns TRUE
 
 check_input <- function(data, nme=NULL,
                         cls=NULL,
@@ -112,7 +120,7 @@ check_input <- function(data, nme=NULL,
           stop(paste0(names(len_param)[k], " should be an integer of length 1"))
         }
         if( is.na(len_param[[k]]) ) {
-          len_param[[k]] <- NULL
+          stop(paste0(names(len_param)[k], " should not be NA, use NULL instead"))
         } else if( len_param[[k]] < 1 ) {
           stop(paste0(names(len_param)[k], " should be positive"))
         }
@@ -154,8 +162,8 @@ check_input <- function(data, nme=NULL,
 
   # check data
   if( !allow_na ) {
-    # if data has 0 length, sum(is.na(data)) is equal to 0
-    if( sum(is.na(data)) != 0 ) {
+    # if data has 0 length, any(is.na(data)) is FALSE
+    if( any(is.na(data)) ) {
       stop(paste0("NA found in ", nme))
     }
   }
@@ -175,14 +183,15 @@ check_input <- function(data, nme=NULL,
       stop(paste0("val should be ", cls))
     }
     if( length(val) == 0 ) {
-      val <- NULL
-    } else if( sum(is.na(val)) != 0 ) {
+      stop("Length of val should not be 0, use NULL instead")
+    } else if( any(is.na(val)) ) {
       stop("NA should not present in val, use allow_na instead")
     }
   }
 
   # check data
   if( !is.null(val) ) {
+    val <- unique(val)
     if( length(data) > 0 ) {
       data_na_rm <- data[!is.na(data)]
       if( length(data_na_rm) > 0 ) {

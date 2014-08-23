@@ -195,7 +195,7 @@ check_input <- function(data, nme=NULL,
     if( length(data) > 0 ) {
       data_na_rm <- data[!is.na(data)]
       if( length(data_na_rm) > 0 ) {
-        if( sum(data_na_rm %in% val) != length(data_na_rm) ) {
+        if( !all(data_na_rm %in% val) ) {
           selected_val <- val[1:min(length(val), 4)]
           stop(paste0(nme, " contains unexpected elements. ",
                       "Acceptable elements are: ",
